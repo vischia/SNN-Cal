@@ -14,7 +14,26 @@ from matplotlib.colors import SymLogNorm
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
+#if torch.backends.mps.is_available():
+#    device = torch.device("mps")
+#    torch.set_default_dtype(torch.float32)
 
+
+#####################################
+##                                 ##
+##  RANDOM SEED                    ##
+##                                 ##
+#####################################
+
+# def set_global_seed(seed):
+#     random.seed(seed)
+#     np.random.seed(seed)
+#     torch.manual_seed(seed)
+#     torch.cuda.manual_seed(seed)
+#     torch.cuda.manual_seed_all(seed)
+
+#     torch.backends.cudnn.deterministic = True
+#     torch.backends.cudnn.benchmark = False
 
 ###############################################################################
 ##                                                                           ##
@@ -191,7 +210,7 @@ class multi_MSELoss(torch.nn.Module):
 ###############################################################################
 ##                                                                           ##
 ##     TRAINER AND TESTER CLASS
-##                                                                           ##
+##     # use_beta_clamp = False: Beta added here                             ##
 ###############################################################################
     
 class Trainer():
@@ -204,11 +223,19 @@ class Trainer():
         self.predict = predict    
         self.datasets = {"train": train_dataset, "validation": val_dataset, "test": test_dataset}
         self.task = task
+        # self.use_beta_clamp = use_beta_clamp
 
         self.current_epoch = 0
         self.loss_hist = {"train": {}, "validation": {}, "test": {}}
         self.acc_hist = {"validation": {}, "test": {}}
-
+        self.par_hist = {}
+        for name, param in self.net.named_parameters():
+            if param.requires_grad:
+                self.par_hist[name] = []
+                
+        # Beta History is added here
+        #self.beta_hist = []
+                     
 
     def test(self, dataset_name):
 
@@ -257,6 +284,16 @@ class Trainer():
             print(f"Validation {task_metric} = {self.acc_hist['validation'][self.current_epoch]}")
             print("\n-------------------------------\n")
 
+        # Save value of optimizable parameters
+        for name, param in self.net.named_parameters():
+            if param.requires_grad:
+                seld.par_hist[name].append(param.cpu().detach().numpy())
+
+        # initial Beta
+        # for name, param in self.net.named_parameters():
+        #      if "beta" in name and para,.requires_grad:
+        #          self.beta_hist.append(param.detach().cpu().clone.numpy())
+
         for epoch in tqdm(range(num_epochs), desc="Epoch"):
             self.net.train()
             # Minibatch training loop
@@ -276,6 +313,36 @@ class Trainer():
                 loss_val.backward()
                 self.optimizer.step()
 
+            # End epoch: Log Beta
+            # for name, param in self.net.named_parameters():
+            #     if "beta" in name.lower() and param.requires_grad:
+            #         self.beta_hist.append(param.detach().cpu().clone().numpy())
+                
+                  # Here the Beta clamping Process starts
+                  # with torch.no_grad():
+                #       for name, param in self.net.named_parameters():
+                #           if 'beta' in name.lower():
+                #               param.clamp_(0.0,1.0)
+
+                  # Updating the Beta Process for testing here
+                 #  if self.use_beta_clamp:
+                #       with torch.no_grad():
+                #           for name, param in self.net.named_parameters():
+                #               if 'beta' in name.lower():
+                #                   param.clamp_(0.0,1.0)
+
+                # Here the Beta clamping Process starts (This Beta clamping is used only if the beta values go beyond 1 and if the values do not go beyond 1 then no need,
+                # as the snntorch library has inbuilt beta clamping depending upon the version of the library used. Better to check the library version 1st before doing
+                # external beta clamping
+                
+                 # beta_tol = 1.10
+                
+                  # with torch.no_grad():
+                  #    for name, param in self.net.named_parameters():
+                  #        if 'beta' in name.lower():
+                  #            param.clamp_(0.0,1.0)
+
+
                 # Store loss history for future plotting
                 if self.current_epoch in self.loss_hist["train"]:
                     self.loss_hist["train"][self.current_epoch].append(loss_val.item())
@@ -293,6 +360,70 @@ class Trainer():
                 print(f"Validation {task_metric} = {self.acc_hist['validation'][self.current_epoch]}")
                 print("\n-------------------------------\n")
 
+            # After training - compute stats
+            self.plot_parameter.statistics()
+
+        # check if the Beta Exists
+        if len(self.beta_hist) == 0:
+            raise RuntimeError("No beta parameter found in model.")
+
+        # Correct Beta Snapshots
+        if len(self.beta_hist) != num_epochs +1:
+            raise RuntimeError(
+                f'Beta history lenght mismatch'
+                f'expected {num_epochs + 1}, got {len(self.beta_hist)}'
+            )
+
+        return{
+            "beta": self.beta_hist,
+            "loss": self.loss_hist,
+            "acc": self.acc_hist,
+        }
+# This function is added now for testing purpose to see whether our approach is correct or not
+    def plot_parameter_statistics(self):
+        """Compute and plot min, mean, and variance of all learnable parameters across epochs"""
+        print("\n Computing parameter statistics...\n")
+
+        stats = {}
+        for name, param_snapshots in self.par_hist.items():
+            param_snapshots = np.array(param_snapshots)
+            stats[name] = {
+                'min': np.min(param_snapshots, axis=0),
+                'mean': np.mean(param_snapshots, axis=0),
+                'var': np.var(param_snapshots, axis=0)
+            }
+
+        # Aggregate Stats for Plot
+
+        # param_names = list(stats.keys())
+        # min_vals = [stats[p]['min'] for p in param_names]
+        # mean_vals = [stats[p]['mean'] for p in param_names]
+        # var_vals = [stats[p]['var'] for p in param_names]
+
+        # Create subplots for min, mean, variance
+
+        #fig, axes = plt.subplots(1,3, figsize=9)
+
+        # Plot mean & variance trends (aggregated)
+        fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+        mean_vals = [np.mean(v['mean']) for v in stats.values()]
+        var_vals = [np.mean(v['var']) for v in stats.values()]
+        param_names = list(stats.keys())
+
+        axes[0].bar(range(len(param_names)), mean_vals)
+        axes[0].set_xticks(range(len(param_names)))
+        axes[0].set_xticklabels(param_names, rotation=45, ha='right')
+        axes[0].set_title("Average of Mean Parameter Values")
+        axes[0].set_ylabel("Mean Value")    
+
+        axes[1].bar(range(len(param_names)), var_vals)
+        axes[1].set_xticks(range(len(param_names)))
+        axes[1].set_xticklabels(param_names, rotation=45, ha='right')
+        axes[1].set_title("Average of Parameter Variance")
+        axes[1].set_ylabel("Variance")
+
+        plt.tight_layout()
+        plt.show()
     
     def plot_loss(self, validation=True, logscale=True):
 
@@ -446,3 +577,6 @@ class Trainer():
         targets, predictions, accuracy = self._get_all(transform=transform)
         self._plot_results(targets=targets, predictions=predictions, plot_type="2D", *args, **kwargs) 
         self._plot_results(accuracy=accuracy, plot_type="1D", *args, **kwargs)
+
+    def get_par_hist(self):
+        return self.par_hist
