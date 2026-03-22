@@ -149,8 +149,8 @@ class CustomDataset(Dataset):
                 targets += info[targets_dict[target]]
 
         samples = to_tensor_and_dtype(np.array(samples))
-        targets = to_tensor_and_dtype(targets, target_dtype = torch.int64)
-
+        if isinstance(targets, str):
+            targets = to_tensor_and_dtype(targets, target_dtype = torch.int64)
         self.data = list(zip(samples, targets))
         self.transform = transform
 
