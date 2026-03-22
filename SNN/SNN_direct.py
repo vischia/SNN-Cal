@@ -39,7 +39,7 @@ labels_map = {
    0: "proton",
    1: "kaon",
    2: "pion"}
-nClasses = 3
+nClasses = len(labels_map)
 
 
 population = 20
@@ -161,7 +161,7 @@ class Hybrid_Net(nn.Module):
 
         return probs
 
-dataset = ds.build_dataset( path="./Data/PrimaryOnly/Uniform", max_files=10000, primary_only = True, target="particle")
+dataset = ds.build_dataset( path="../Data/PrimaryOnly/Uniform", max_files=10000, primary_only = True, target="particle")
 
 train_loader, test_loader, val_loader = ds.build_loaders(dataset, split=(0.7, 0.15), batch_size=batch_size, shuffle=True)
 
