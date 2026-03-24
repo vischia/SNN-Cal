@@ -136,8 +136,11 @@ class Hybrid_Net(nn.Module):
     def __init__(self, snn_network):
         super().__init__()
 
+        self.softmax = nn.Softmax(dim=1)
+        self.snn = snn_network
+
         self.ann = nn.Sequential(
-            nn.Linear(60, 32),
+            nn.Linear(self.snn.n_neurons[-1], 32),
             nn.LayerNorm(32),
             nn.LeakyReLU(),
             nn.Linear(32, 16),
@@ -146,8 +149,7 @@ class Hybrid_Net(nn.Module):
             nn.Linear(16, 4)
         )
 
-        self.softmax = nn.Softmax(dim=1)
-        self.snn = snn_network
+
 
     def forward(self, data):
 
