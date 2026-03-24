@@ -13,11 +13,11 @@ resultados
 Photon_matrix.py
 plots.py
 read.py
-run_job.sh
 SNN_inference.py
-submit_snn.sub
 tiempos.py
 SNN_clasificacion_binaria.py
 SNN_doble.py
 dataset_modified.py
 Graficas_dataset
+Experimento.py
+LMU.py
