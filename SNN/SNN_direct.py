@@ -24,7 +24,7 @@ max_t = 20
 dt = 0.2
 timesteps = int(max_t/dt)
 batch_size = 50
-num_epochs = 4
+num_epochs = 40
 idx = 100  
 '''
 labels_map = {
@@ -187,6 +187,13 @@ cm_metric = train_Epos_spk.ConfusionMatrix(num_classes=4)
 cm = cm_metric.compute().cpu().numpy()
 np.savetxt("confusion_matrix.txt", cm, fmt="%d")
 
+# Plot loss function evolution
+fig_loss, ax_loss = plt.subplots(figsize=(20, 10))
+plt.plot(loss_hist["train"], label="Train")
+plt.plot(loss_hist["validation"], label="Test")
+fig_cm.tight_layout()
+fig_cm.savefig("loss_evolution.png", dpi=300, bbox_inches="tight")
+plt.close(fig_loss)
 
 '''
 data_batch, targets_batch = next(iter(val_loader))
