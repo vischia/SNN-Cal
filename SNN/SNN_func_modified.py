@@ -245,7 +245,7 @@ class Trainer():
                 pred, acc = self.predict(output, targets)
 
                 # compute loss
-                loss = self.loss_fn(pred, targets)
+                loss = self.loss_fn(output, targets)            #CAMBIO AQUI!!! Antes era self.loss_fn(pred,targets)
                 temp_loss.append(loss.item())
                 
                 #Añadido Raul
@@ -287,7 +287,7 @@ class Trainer():
                 pred, _ = self.predict(output, targets)
 
                 # compute loss
-                loss_val = self.loss_fn(pred, targets)
+                loss_val = self.loss_fn(output, targets)          #CAMBIO AQUI!!! Antes era self.loss_fn(pred, targets)
 
                 # Gradient calculation + weight update
                 self.optimizer.zero_grad()

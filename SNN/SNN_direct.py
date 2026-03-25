@@ -24,7 +24,7 @@ max_t = 20
 dt = 0.2
 timesteps = int(max_t/dt)
 batch_size = 50
-num_epochs = 40
+num_epochs = 4
 idx = 100  
 '''
 labels_map = {
@@ -149,7 +149,8 @@ class Hybrid_Net(nn.Module):
             nn.Linear(16, 4)
         )
 
-
+        self.softmax = nn.LogSoftmax(dim=1)
+        self.snn = snn_network
 
     def forward(self, data):
 
@@ -163,7 +164,7 @@ class Hybrid_Net(nn.Module):
 
         return probs
 
-dataset = ds.build_dataset( path="../Data/PrimaryOnly/Uniform", max_files=10000, primary_only = True, target="particle")
+dataset = ds.build_dataset( path="./Data/PrimaryOnly/Uniform", max_files=10000, primary_only = True, target="particle")
 
 train_loader, test_loader, val_loader = ds.build_loaders(dataset, split=(0.7, 0.15), batch_size=batch_size, shuffle=True)
 
@@ -173,7 +174,7 @@ modelo_completo = Hybrid_Net(net_Epos_spk)
 Pred_Epos_spk = snnfn.Predictor(predict_spikefreq, comp_accuracy)
 #loss_Epos = nn.CrossEntropyLoss()
 loss_Epos = nn.NLLLoss()
-opt_Epos_spk = torch.optim.Adam(modelo_completo.parameters(), lr=1e-3, betas=(0.9, 0.999), weight_decay=0)
+opt_Epos_spk = torch.optim.Adam(modelo_completo.parameters(), lr=5e-3, betas=(0.9, 0.999), weight_decay=0)
 sche_Epos_spk = torch.optim.lr_scheduler.ExponentialLR(opt_Epos_spk, gamma=0.9)
 train_Epos_spk = snnfn.Trainer(modelo_completo, loss_Epos, opt_Epos_spk, Pred_Epos_spk,
                     train_loader, val_loader, test_loader, task = "Accuracy")
@@ -301,9 +302,9 @@ with torch.no_grad():
         data_batch = data_batch.to(snnfn.device)
         targets_batch = targets_batch.to(snnfn.device)
 
-        probs = modelo_completo(data_batch)
+        log_probs = modelo_completo(data_batch)
 
-        # probs = torch.exp(log_probs)
+        probs = torch.exp(log_probs)
 
         all_probs.append(probs.cpu())
         all_targets.append(targets_batch.view(-1).cpu())
