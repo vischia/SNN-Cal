@@ -259,6 +259,8 @@ class Trainer():
         if verbosity:
             task_metric = "Average Error" if self.task == "Regression" else "Accuracy"
             print(f"Epoch {self.current_epoch}:")
+            print(f"Training Loss = {self.loss_hist['train'][self.current_epoch]}")
+            print(f"Training {task_metric} = {self.acc_hist['train'][self.current_epoch]}")
             print(f"Validation Loss = {self.loss_hist['validation'][self.current_epoch]}")
             print(f"Validation {task_metric} = {self.acc_hist['validation'][self.current_epoch]}")
             print("\n-------------------------------\n")

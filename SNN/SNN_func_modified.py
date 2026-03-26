@@ -312,6 +312,8 @@ class Trainer():
 
             if verbosity:
                 print(f"Epoch {self.current_epoch}:")
+                print(f"Training Loss = {self.loss_hist['train'][self.current_epoch]}")
+                print(f"Training {task_metric} = {self.acc_hist['train'][self.current_epoch]}")
                 print(f"Validation Loss = {self.loss_hist['validation'][self.current_epoch]}")
                 print(f"Validation {task_metric} = {self.acc_hist['validation'][self.current_epoch]}")
                 print("\n-------------------------------\n")
