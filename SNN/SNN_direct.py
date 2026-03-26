@@ -187,12 +187,14 @@ cm_metric = train_Epos_spk.ConfusionMatrix(num_classes=4)
 cm = cm_metric.compute().cpu().numpy()
 np.savetxt("confusion_matrix.txt", cm, fmt="%d")
 
+train_Epos_skp.plot_loss()
+
 # Plot loss function evolution
 fig_loss, ax_loss = plt.subplots(figsize=(20, 10))
 plt.plot(loss_hist["train"], label="Train")
 plt.plot(loss_hist["validation"], label="Test")
-fig_cm.tight_layout()
-fig_cm.savefig("loss_evolution.png", dpi=300, bbox_inches="tight")
+fig_loss.tight_layout()
+fig_loss.savefig("my_loss_evolution.png", dpi=300, bbox_inches="tight")
 plt.close(fig_loss)
 
 '''
